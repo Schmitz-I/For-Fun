@@ -1,0 +1,93 @@
+// LOOK HERE!!!!!
+// To take in song imput, change playSong to true!!!!
+let playSong = false;
+let fft;
+let peakDetect;
+let mic;
+let speaker;
+let song1;
+let song2;
+let song;
+
+function preload() {
+  speaker = loadImage("Assets/Basic-speaker.png");
+  song1 = loadSound("Sounds/simple-beat.mp3"); 
+  song2 = loadSound("Sounds/soft-beat.wav");
+  song3 = loadSound("Sounds/long-song.mp3");
+}
+
+function setup() {
+  createCanvas(512, 512);
+  mic = new p5.AudioIn();
+  mic.start();
+  imageMode(CENTER);
+  fft = new p5.FFT(0, 512); 
+  
+  // LOOK HERE!!!!!
+  // Song options: change song1 to song2!!!!!
+  song = song1;
+  peakDetect = new p5.PeakDetect(20, 20000, 0.01);
+  if (playSong) {
+    fft.setInput(song);
+  } else {
+    fft.setInput(mic);
+  }
+  
+}
+
+function draw() {
+  background(22, 33, 107);
+  
+  let spectrum = fft.analyze()
+  
+  let micLevel; 
+  if (playSong) {
+    // If playing a song, detect beats. Otherwise, use amplitude of microphone input
+    peakDetect.update(fft);
+    if (peakDetect.isDetected) {
+      micLevel = 0.75;
+    } else if (micLevel > 0.25) {
+      micLevel *= 0.99;
+    } else {
+      micLevel = 0.25;
+    } 
+  } else {
+    micLevel = mic.getLevel();
+  }
+  // Adjusts size of speaker cones
+  let vol1 = map(micLevel, 0, 1, 60, 100)
+  let vol2 = map(micLevel, 0, 1, 40, 100)
+  
+  // Draws pink wave in background
+  strokeWeight(1);
+  stroke(255, 55, 119);
+  for (let i = 0; i < spectrum.length; i++) {
+    let amplitude = spectrum[i];
+    stroke(255, i / 2, 119);
+    let y = map(amplitude, 0, 512, 340, 340 - (height / 2));
+    line(i, 330, i, y);
+  }
+  
+  // Draws all necessary pieces
+  fill(25, 202, 207)
+  rect(0, 330, width, height)
+  stroke(255, 55, 119);
+  image(speaker, 400, 360);
+  fill(96, 96, 96);
+  strokeWeight(4);
+  ellipse(391, 400, vol1, vol1);
+  ellipse(391, 330, vol2, vol2);
+}
+
+function mousePressed() {
+  if (playSong) {
+    if (song.isPlaying()) {
+      song.stop();
+      console.log("Song is paused");
+    } else {
+      song.play();
+      song.loop();
+      console.log("Song is playing");
+    }
+  }
+}
